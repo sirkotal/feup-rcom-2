@@ -23,6 +23,15 @@ int parse(const char *url, struct URL *res) {
         }
     }
 
+    struct hostent *h;
+
+    if ((h = gethostbyname(argv[1])) == NULL) {
+        herror("gethostbyname()");
+        exit(-1);
+    }
+
+    strcpy(res->ip, inet_ntoa(*((struct in_addr *) h->h_addr)));
+
     return 0;
 }
 
