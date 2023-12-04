@@ -7,6 +7,9 @@
 #include <netdb.h>
 #include <string.h>
 
+#define SERVER_PORT 6000
+#define SERVER_ADDR "192.168.28.96"
+
 struct URL {
     char host[400];     
     char resource[400];  
@@ -17,3 +20,5 @@ struct URL {
 };
 
 int parse(const char *url, struct URL *res);
+
+int createSocket();
