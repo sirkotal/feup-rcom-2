@@ -1,4 +1,4 @@
-#include "../include/app.h"
+#include "../include/download.h"
 
 int parse(const char *url, struct URL *res) {
     int ftp = sstrncmp(url, "ftp://\[", 7);
