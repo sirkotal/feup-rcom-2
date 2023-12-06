@@ -10,3 +10,6 @@ ifconfig eth1 172.16.31.253/24
 
 sysctl net.ipv4.ip_forward=1
 sysctl net.ipv4.icmp_echo_ignore_broadcasts=0
+
+# Exp 4
+route add default gw 172.16.31.254
