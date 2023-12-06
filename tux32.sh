@@ -18,3 +18,6 @@ route del -net 172.16.30.0/24 gw 172.16.31.253
 route add -net 172.16.30.0/24 gw 172.16.31.253 
 sysctl net.ipv4.conf.eth0.accept_redirects=1
 sysctl net.ipv4.conf.all.accept_redirects=1
+
+# Exp 5 -> /etc/resolv.conf
+nameserver 172.16.2.1

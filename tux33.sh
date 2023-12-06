@@ -9,3 +9,6 @@ route add -net  172.16.31.0/24 gw 172.16.30.254
 
 # Exp 4
 route add default gw 172.16.30.254 
+
+# Exp 5 -> /etc/resolv.conf
+nameserver 172.16.2.1

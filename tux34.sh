@@ -13,3 +13,6 @@ sysctl net.ipv4.icmp_echo_ignore_broadcasts=0
 
 # Exp 4
 route add default gw 172.16.31.254
+
+# Exp 5 -> /etc/resolv.conf
+nameserver 172.16.2.1
