@@ -70,6 +70,7 @@ void login(int sockfd, const char* username, const char* password) {
 
     int code;
     sscanf(response, "%d", &code);
+    printf("%d", code);
     if (code != 331){
         perror("User unknown");
         exit(-1);
@@ -220,7 +221,7 @@ int main(int argc, char *argv[]) {
     
     int sockfd;
     socketInit(&sockfd, url.ip, PORT);
-    
+    sleep(1);
     char response[1024];
 
     if (read(sockfd, response, 1024) < 0) {
@@ -230,6 +231,7 @@ int main(int argc, char *argv[]) {
 
     int code;
     sscanf(response, "%d", &code);
+    printf("%d", code);
     if (code != 220){
         perror("Failed to connect to the service");
         exit(-1);
