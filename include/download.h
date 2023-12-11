@@ -7,18 +7,26 @@
 #include <netdb.h>
 #include <string.h>
 
-#define SERVER_PORT 6000
-#define SERVER_ADDR "192.168.28.96"
+#define PORT 21
 
 struct URL {
-    char host[400];     
-    char resource[400];  
-    char file[400];     
-    char ip[400];   
-    char username[400];      
-    char password[400];      
+    char host[500];     
+    char resource[500];  
+    char file[500];     
+    char ip[500];   
+    char username[500];      
+    char password[500];      
+};
+
+enum message_state {
+    START,
+    CODE,
+    LINE,
+    END
 };
 
 int parse(const char *url, struct URL *res);
 
-int createSocket();
+int socketInit(int *sockfd, const char *ip, int port);
+
+int createSocket(char *ip);
