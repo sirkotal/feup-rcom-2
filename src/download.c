@@ -34,7 +34,7 @@ int parse(const char *url, struct URL *res) {
 }
 
     
-int socketInit(int *sockfd, const char *ip, int port){
+void socketInit(int *sockfd, const char *ip, int port){
     struct sockaddr_in server_addr;
 
     bzero((char *) &server_addr, sizeof(server_addr));
@@ -51,55 +51,6 @@ int socketInit(int *sockfd, const char *ip, int port){
         perror("connect()");
         exit(-1);
     }
-}
-
-
-
-void getResponse(int sockfd, char *response) {
-    char byte;
-    int i = 0;
-    char type;
-    memset(response, 0, 500);
-    enum message_state state = START;
-    while (state != END) {
-        read(sockfd, &byte, 1);
-        switch (state) {
-            case START:
-                if (byte == ' ' || byte == '-'){
-                    state = LINE;
-                    type = byte;
-                }
-                else
-                    response[i++] = byte;
-                break;
-            case CODE:
-                if (byte == ' ' || byte == '-'){
-                    state = LINE;
-                    type = byte;
-
-                }
-                else if (byte == '\n'){
-                    state = END;
-                }
-                break;
-            case LINE:
-                if (byte == '\n'){
-                    if (type == '-'){
-                        state = CODE;
-                    }
-                    else{
-                        state = END;
-                    }
-                }
-                break;
-            case END:
-                break;
-            default:
-                break;
-        }
-    }
-    response[i]='\0';
-    printf("fim\n");
 }
 
 void login(int sockfd, const char* username, const char* password) {
@@ -119,9 +70,11 @@ void login(int sockfd, const char* username, const char* password) {
 
     int code;
     sscanf(response, "%d", &code);
-    printf("%d", code);
+    if (code != 331){
+        perror("User unknown");
+        exit(-1);
+    }
 
-    char response2[1024];
 
     int pass_len = 6+strlen(password);
     char pass[pass_len];
@@ -130,40 +83,65 @@ void login(int sockfd, const char* username, const char* password) {
     strcat(pass, "\n");  
     write(sockfd, pass, pass_len);
 
-    if (read(sockfd, response2, 1024) < 0) {
+    if (read(sockfd, response, 1024) < 0) {
         perror("read()");
         exit(-1);
     }
-    int code2;
-    sscanf(response2, "%d", &code2);
-    printf("%d", code2);
+
+    sscanf(response, "%d", &code);
+    if (code != 230){
+        perror("Wrong password");
+        exit(-1);
+    }
 
 }
 
 void activatePassive(int sockfd, char *ip, int *port){
     write(sockfd, "pasv\n", 5);
+    
     char response[1024];
     if (read(sockfd, response, 1024) < 0) {
         perror("read()");
         exit(-1);
     }
+
+    int code;
+        sscanf(response, "%d", &code);
+    if (code != 227){
+        perror("Passive mode inactive");
+        exit(-1);
+    }
+
     int byte1, byte2, byte3, byte4, byte5, byte6;
     sscanf(response, "%*[^(](%d,%d,%d,%d,%d,%d)%*[^\n$)]", &byte1, &byte2, &byte3, &byte4, &byte5, &byte6);
     sprintf(ip, "%d.%d.%d.%d", byte1, byte2, byte3, byte4);
     *port = (byte5*256)+byte6;   
 }
 
-void requestResource(const int socket, const char *resource) {
+void requestResource(const int sockfd, const char *resource) {
     int user_len = 6+strlen(resource);
     char file[user_len];
     strcpy(file, "retr ");
     strcat(file, resource);  
     strcat(file, "\n");  
-    write(socket, file, user_len);
+    write(sockfd, file, user_len);
+    
+    char response[1024];
+    if (read(sockfd, response, 1024) < 0) {
+        perror("read()");
+        exit(-1);
+    }
+
+    int code;
+    sscanf(response, "%d", &code);
+    if (code != 150){
+        perror("Unknown resource");
+        exit(-1);
+    }
 }
 
-int resourceDownload(const int controlSocket, const int dataSocket, char *filename) {
-    char buf[1000];
+void resourceDownload(const int controlSocket, const int dataSocket, char *filename) {
+    char buf[1024];
     FILE *fptr; 
     fptr = fopen(filename, "wb");
 
@@ -172,25 +150,66 @@ int resourceDownload(const int controlSocket, const int dataSocket, char *filena
         exit(EXIT_FAILURE);
     }
 
-    int bytes_to_read = read(dataSocket, buf, 1000);
+    int bytes_to_read = read(dataSocket, buf, 1024);
 
     while (bytes_to_read > 0) {
 
         if (fwrite(buf, bytes_to_read, 1, fptr) < 0) {
-            return -1;
+            perror("write()");
+            exit(-1);
         }
 
-        bytes_to_read = read(dataSocket, buf, 1000);
+        bytes_to_read = read(dataSocket, buf, 1024);
     }
 
     fclose(fptr);
+    
+    char response[1024];
+    if (read(controlSocket, response, 1024) < 0) {
+        perror("read()");
+        exit(-1);
+    }
 
-    return 1;
+    int code;
+    sscanf(response, "%d", &code);
+    if (code != 226){
+        perror("Error while downloading file");
+        exit(-1);
+    }
+}
+
+void closeSocket(const int controlSocket, const int dataSocket){
+    write(controlSocket, "quit\n", 5);
+    
+    char response[1024];
+    if (read(controlSocket, response, 1024) < 0) {
+        perror("read()");
+        exit(-1);
+    }
+
+    int code;
+    sscanf(response, "%d", &code);
+    if (code != 221){
+        perror("Error while quitting");
+        exit(-1);
+    }
+    close(controlSocket);
+    close(dataSocket);  
 }
 
 int main(int argc, char *argv[]) {
+    
+    if (argc != 2) {
+        perror("Include a URL");
+        exit(-1);
+    }
+
     struct URL url; 
-    parse(argv[1], &url);
+
+    if (parse(argv[1], &url)){
+        perror("Error while parsing the URL");
+        exit(-1);
+    }
     
     printf("Host: %s\n", url.host);
     printf("Resource: %s\n", url.resource);
@@ -211,14 +230,23 @@ int main(int argc, char *argv[]) {
 
     int code;
     sscanf(response, "%d", &code);
+    if (code != 220){
+        perror("Failed to connect to the service");
+        exit(-1);
+    }
 
-    printf("%d", code);
     login(sockfd, url.username, url.password);
+
     char ip[500];
     int port = 0;
     activatePassive(sockfd, ip, &port);
+    
     int sockfdB;
     socketInit(&sockfdB, ip, port);
+    
     requestResource(sockfd, url.resource);
+
     resourceDownload(sockfd, sockfdB, url.file);
+
+    closeSocket(sockfd, sockfdB);
 }

@@ -18,15 +18,4 @@ struct URL {
     char password[500];      
 };
 
-enum message_state {
-    START,
-    CODE,
-    LINE,
-    END
-};
 
-int parse(const char *url, struct URL *res);
-
-int socketInit(int *sockfd, const char *ip, int port);
-
-int createSocket(char *ip);
