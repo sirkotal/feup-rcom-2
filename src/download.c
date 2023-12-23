@@ -1,8 +1,8 @@
 #include "../include/download.h"
 
 int parse(const char *url, struct URL *res) {
-    int ftp = strncmp(url, "ftp://\[", 7);
-    if (ftp) {
+    int ftp = (strstr(url, "@") != NULL);
+    if (!ftp) {
         int len = sscanf(url, "ftp://%[^/]/%s", res->host, res->resource);
         if (len != 2) {
             perror("The FTP URL is invalid");
@@ -14,7 +14,8 @@ int parse(const char *url, struct URL *res) {
         strcpy(res->password, "anonymous");
     }
     else {
-        int len = sscanf(url, "ftp://\[%[^:]:%[^@]@]%[^/]/%s", res->username, res->password, res->host, res->resource);
+        int len = sscanf(url, "ftp://%[^:]:%[^@]@%[^/]/%s", res->username, res->password, res->host, res->resource);
+        printf("%s", res->host);
         if (len != 4) {
             perror("The FTP URL is invalid");
             printf("\n");
