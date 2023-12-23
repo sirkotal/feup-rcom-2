@@ -2,7 +2,8 @@
 
 int parse(const char *url, struct URL *res) {
     int ftp = (strstr(url, "@") != NULL);
-    if (!ftp) {
+    int ftp2 = (strstr(url, ":") != NULL);
+    if (!ftp || !ftp2) {
         int len = sscanf(url, "ftp://%[^/]/%s", res->host, res->resource);
         if (len != 2) {
             perror("The FTP URL is invalid");
@@ -15,13 +16,13 @@ int parse(const char *url, struct URL *res) {
     }
     else {
         int len = sscanf(url, "ftp://%[^:]:%[^@]@%[^/]/%s", res->username, res->password, res->host, res->resource);
-        printf("%s", res->host);
         if (len != 4) {
             perror("The FTP URL is invalid");
             printf("\n");
             return 1;
         }
     }
+
     strcpy(res->file, strrchr(url, '/') + 1);
     struct hostent *h;
     if ((h = gethostbyname(res->host)) == NULL) {
